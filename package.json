@@ -1,0 +1,25 @@
+{
+  "name": "control-android-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "gulp scripts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "debug": "^3.1.0",
+    "express": "^4.16.2",
+    "gulp": "^3.9.1",
+    "gulp-typescript": "^3.2.2",
+    "typescript": "^2.5.3"
+  },
+  "devDependencies": {
+    "@types/debug": "0.0.30",
+    "@types/express": "^4.0.37",
+    "@types/node": "^8.0.34"
+  }
+}
