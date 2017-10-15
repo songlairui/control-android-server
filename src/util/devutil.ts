@@ -73,6 +73,7 @@ export async function listDevices(client) {
           let properities = await client.getProperties(device.id)
           device.abi = getAbi(properities)
           device.sdk = +properities['ro.build.version.sdk']
+          device.name = properities['ro.product.name']
         })
       )
       return devices

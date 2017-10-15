@@ -1,6 +1,7 @@
 import * as path from 'path'
 import * as logger from 'morgan'
 import * as express from 'express'
+import * as cors from 'cors'
 import * as bodyParser from 'body-parser'
 
 import HeroRouter from './routes/HeroRouter'
@@ -26,9 +27,15 @@ class App {
         message: 'hello World'
       })
     })
+    var corsOption = {
+      origin: true,
+      methods: ['GET', 'POST'],
+      // credentials: true,
+      maxAge: 3600
+    }
     this.express.use('/', router)
     this.express.use('/api/v1/heroes', HeroRouter)
-    this.express.use('/api/adb', AdbRouter)
+    this.express.use('/api/adb', cors(corsOption), AdbRouter)
   }
 }
 

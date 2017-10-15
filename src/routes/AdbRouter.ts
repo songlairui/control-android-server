@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express'
-import { listDevices, killProcsByComm } from '../util/devutil'
+import { listDevices, listPidsByComm, killProcsByComm } from '../util/devutil'
 
 import * as adb from 'adbkit'
 import * as util from 'util'
@@ -130,6 +130,21 @@ export class AdbRouter {
       result
     })
   }
+
+  public async checkRunning(req: Request, res: Response, next: NextFunction) {
+    let device = (tracedDevices || (await listDevices(client)))[0]
+    if (!device)
+      return res.status(400).send({ message: 'no device', status: res.status })
+    let result = await listPidsByComm(
+      client,
+      device.id,
+      '',
+      '/data/local/tmp/minicap'
+    )
+    res.status(200).send({
+      result
+    })
+  }
   public async start(req: Request, res: Response, next: NextFunction) {
     let device = (tracedDevices || (await listDevices(client)))[0]
     if (!device)
@@ -170,6 +185,7 @@ export class AdbRouter {
     this.router.get('/deploy', this.deploy)
     this.router.get('/stop', this.stop)
     this.router.get('/start', this.start)
+    this.router.get('/checkRunning', this.checkRunning)
     this.router.get('/forward', this.forward)
   }
 }
