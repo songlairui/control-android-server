@@ -3,6 +3,8 @@ import * as logger from 'morgan'
 import * as express from 'express'
 import * as bodyParser from 'body-parser'
 
+import HeroRouter from './routes/HeroRouter'
+
 class App {
   public express: express.Application
   constructor() {
@@ -24,6 +26,7 @@ class App {
       })
     })
     this.express.use('/', router)
+    this.express.use('/api/v1/heroes', HeroRouter)
   }
 }
 
