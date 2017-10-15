@@ -4,6 +4,7 @@ import * as express from 'express'
 import * as bodyParser from 'body-parser'
 
 import HeroRouter from './routes/HeroRouter'
+import AdbRouter from './routes/AdbRouter'
 
 class App {
   public express: express.Application
@@ -27,6 +28,7 @@ class App {
     })
     this.express.use('/', router)
     this.express.use('/api/v1/heroes', HeroRouter)
+    this.express.use('/api/adb', AdbRouter)
   }
 }
 
