@@ -1,7 +1,12 @@
 import * as http from 'http'
 import * as debug from 'debug'
 
+import { Server as WebSocketServer } from 'ws'
+import * as net from 'net'
+
 import App from './App'
+import { wssConnect } from './util/frameutil'
+import { sideServ } from './sideServ'
 
 debug('ts-express:server')
 
@@ -9,9 +14,15 @@ const port = normalizePort(process.env.PORT || 3001)
 App.set('port', port)
 
 const server = http.createServer(App)
+var wss = new WebSocketServer({ server: server })
+
+wss.on('connection', wssConnect)
+
 server.listen(port)
 server.on('error', onError)
 server.on('listening', onListening)
+
+sideServ()
 
 function normalizePort(val: number | string): number | string | boolean {
   let port: number = +val
