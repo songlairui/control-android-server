@@ -5,6 +5,22 @@ import * as adb from 'adbkit'
 let client = adb.createClient()
 
 export async function wssConnect(ws) {
+  let mark = {
+    lastTimeStamp: null,
+    stream: null
+  }
+  mark.stream = mark.stream || (await liveStream({ ws, mark }))
+  ws.on('close', function() {
+    console.info('------ CLOSED ws  ----- :', ws === null, mark.stream === null)
+    mark.lastTimeStamp = null
+    console.info('Lost a client', ws.readyState)
+    ws = null
+    console.info('ws cleared', ws !== null && ws.readyState)
+    if (mark.stream) mark.stream.end()
+  })
+}
+
+async function liveStream({ ws, mark }) {
   console.info('Got a client')
   let device = (await listDevices(client))[0]
   if (!device) {
@@ -19,7 +35,15 @@ export async function wssConnect(ws) {
     .timeout(10000)
     .then(out => ({ stream: out }))
     .catch(err => ({ err }))
-  if (err) return console.info('socket error')
+  if (err) {
+    console.info('socket error, Retry within .2 second!!!')
+    await new Promise(resolve => setTimeout(resolve, 200))
+    if (!ws) {
+      return console.info('[[ ws 已关闭，无须重启 ]]')
+    }
+    mark.stream = await liveStream({ ws, mark })
+    return
+  }
   // var stream = net.connect({
   //   port: 1313
   // })
@@ -45,7 +69,6 @@ export async function wssConnect(ws) {
     quirks: 0
   }
 
-  let lastTimeStamp = null
   let i = 0
   function tryRead() {
     for (var chunk; (chunk = stream.read()); ) {
@@ -119,18 +142,18 @@ export async function wssConnect(ws) {
           frameBodyLength += (chunk[cursor] << (readFrameBytes * 8)) >>> 0
           cursor += 1
           readFrameBytes += 1
-          console.info(
-            '[chunk 2]headerbyte%d(val=%d)',
-            readFrameBytes,
-            frameBodyLength
-          )
+          // console.info(
+          //   '[chunk 2]headerbyte%d(val=%d)',
+          //   readFrameBytes,
+          //   frameBodyLength
+          // )
         } else {
           if (len - cursor >= frameBodyLength) {
-            console.info(
-              '[chunk 3]bodyfin(len=%d,cursor=%d)',
-              frameBodyLength,
-              cursor
-            )
+            // console.info(
+            //   '[chunk 3]bodyfin(len=%d,cursor=%d)',
+            //   frameBodyLength,
+            //   cursor
+            // )
 
             frameBody = Buffer.concat([
               frameBody,
@@ -148,13 +171,21 @@ export async function wssConnect(ws) {
 
             let currentTimeStamp = +new Date()
             // if (lastTimeStamp) {
-            if (!lastTimeStamp || currentTimeStamp - lastTimeStamp > 40) {
-              console.info('| delta > 30 |')
-
-              lastTimeStamp = currentTimeStamp
-              ws.send(frameBody, {
-                binary: true
-              })
+            if (
+              !mark.lastTimeStamp ||
+              currentTimeStamp - mark.lastTimeStamp > 20
+            ) {
+              // console.info('| delta > 30 |')
+              mark.lastTimeStamp = currentTimeStamp
+              // 前边有 异步过程， 这里重新判断一下 ws
+              if (ws && ws.readyState === 1) {
+                ws.send(frameBody, {
+                  binary: true
+                })
+              } else {
+                console.info('ws has closed when TRYREAD')
+                stream.end()
+              }
             } else {
               console.info('skip a frame ------- ')
             }
@@ -165,7 +196,7 @@ export async function wssConnect(ws) {
             frameBodyLength = readFrameBytes = 0
             frameBody = Buffer.from([])
           } else {
-            console.info('[chunk 4]body(len=%d)', len - cursor)
+            // console.info('[chunk 4]body(len=%d)', len - cursor)
 
             frameBody = Buffer.concat([frameBody, chunk.slice(cursor, len)])
 
@@ -178,10 +209,11 @@ export async function wssConnect(ws) {
     }
   }
   stream.on('readable', tryRead)
-
-  ws.on('close', function() {
-    lastTimeStamp = null
-    console.info('Lost a client')
-    stream.end()
+  stream.on('close', async () => {
+    console.info('socket Stream Closed ', ws.readyState)
+    mark.stream = null
+    if (!ws || ws.readyState !== 1) return
+    mark.stream = await liveStream({ ws, mark })
   })
+  return stream
 }
