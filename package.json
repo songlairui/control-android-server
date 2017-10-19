@@ -29,7 +29,8 @@
     "mocha": "^4.0.1",
     "morgan": "^1.9.0",
     "split": "^1.0.1",
-    "typescript": "^2.5.3"
+    "typescript": "^2.5.3",
+    "ws": "^3.2.0"
   },
   "devDependencies": {
     "@types/chai": "^4.0.4",
