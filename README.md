@@ -16,7 +16,15 @@ gulp watch &
 npm start
 ```
 
-## Key Skill
+## 解决的技术点
+
+- TypeScript  
+  体验TypeScript  
+  函数参数提示
+
+- express router
+  使用 router 创建 restful 风格 api
+  // TODO: 使用MVC
 
 - Socket 
   socket的读取与写入
@@ -25,3 +33,16 @@ npm start
   Stream的read() 
   stream on readable 与 on data
   
+- async/await 的使用
+  对 async 函数取返回值时，漏过一个await，令我得不到socket，无法将touch事件传入。  
+
+- 屏幕旋转，x、y坐标的转置
+  屏幕旋转，绘图坐标系旋转，android点击事件的坐标系并不旋转。
+  根据绘图坐标系取得的x、y信息，需要进行转置
+
+## TODO  
+
+- 使用 protobuf 对传websocket 
+  如果需要  
+
+- 优化 frameutil ，主动丢包。
