@@ -116,13 +116,6 @@ export async function startMinicap({
   let result = await client.shell(device.id, command).then(out => {
     return new Promise((resolve, reject) => {
       let datachunk = ''
-      out.on('data', chunk => {
-        // console.info('[chunk]')
-        datachunk += chunk
-      })
-      out.on('end', () => {
-        resolve({ datachunk })
-      })
       out.on('error', error => {
         reject({ error, command: command })
       })
@@ -135,6 +128,28 @@ export async function startMinicap({
   return result
 }
 
+export async function startMiniTouch({ tracedDevices, client, status }) {
+  let device = (tracedDevices || (await listDevices(client)))[0]
+  if (!device) {
+    return
+  }
+  await killProcsByComm(client, device.id, '', '/data/local/tmp/minitouch', '')
+  let command = 'exec /data/local/tmp/minitouch'
+  console.info('StartTouch')
+  let result = await client.shell(device.id, command).then(out => {
+    return new Promise((resolve, reject) => {
+      let datachunk = ''
+      out.on('error', error => {
+        reject({ error, command: command })
+      })
+      setTimeout(() => {
+        resolve({ message: 'there is no error in 100ms', code: 0 })
+        status.tryingStart = false
+      }, 100)
+    })
+  })
+  return result
+}
 function getAbi(properties) {
   var split = list => (list ? list.split(',') : [])
   var abi = {

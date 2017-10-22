@@ -3,7 +3,8 @@ import {
   listDevices,
   listPidsByComm,
   killProcsByComm,
-  startMinicap
+  startMinicap,
+  startMiniTouch
 } from '../util/devutil'
 
 import * as util from 'util'
@@ -13,7 +14,8 @@ let client = adb.createClient()
 
 let tracedDevices = null
 const status = {
-  tryingStart: false
+  tryingStart: false,
+  tryingStartTouch: false
 }
 
 export async function getDevices() {
@@ -159,6 +161,22 @@ export async function start({ orientation }) {
   status.tryingStart = false
   return { err, result }
 }
+
+export async function startTouch() {
+  let err, result
+  if (status.tryingStartTouch) {
+    console.info('trying start')
+    return {
+      message: 'already trying',
+      result,
+      err
+    }
+  }
+  status.tryingStartTouch = true
+  result = await startMiniTouch({ status, tracedDevices, client })
+  status.tryingStartTouch = false
+  return { err, result }
+}
 export async function forward() {
   return {
     message: 'will use openLocal do forward without port'
@@ -184,6 +202,8 @@ export async function getRotatorMonitor() {
   // treatOut(out)
   return client.shell(device.id, command)
 }
+
+
 function treatOut(out) {
   // out.on('readable', () => {
   //   let data = out.read()

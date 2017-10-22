@@ -4,23 +4,7 @@ import { listDevices, listPidsByComm, killProcsByComm } from '../util/devutil'
 import * as adb from 'adbkit'
 let client = adb.createClient()
 
-export async function wssConnect(ws) {
-  let mark = {
-    lastTimeStamp: null,
-    stream: null
-  }
-  mark.stream = mark.stream || (await liveStream({ ws, mark }))
-  ws.on('close', function() {
-    console.info('------ CLOSED ws  ----- :', ws === null, mark.stream === null)
-    mark.lastTimeStamp = null
-    console.info('Lost a client', ws.readyState)
-    ws = null
-    console.info('ws cleared', ws !== null && ws.readyState)
-    if (mark.stream) mark.stream.end()
-  })
-}
-
-async function liveStream({ ws, mark }) {
+export async function liveStream({ ws, mark }) {
   console.info('Got a client')
   let device = (await listDevices(client))[0]
   if (!device) {
@@ -173,7 +157,7 @@ async function liveStream({ ws, mark }) {
             // if (lastTimeStamp) {
             if (
               !mark.lastTimeStamp ||
-              currentTimeStamp - mark.lastTimeStamp > 20
+              currentTimeStamp - mark.lastTimeStamp > 40
             ) {
               // console.info('| delta > 30 |')
               mark.lastTimeStamp = currentTimeStamp
@@ -214,6 +198,44 @@ async function liveStream({ ws, mark }) {
     mark.stream = null
     if (!ws || ws.readyState !== 1) return
     mark.stream = await liveStream({ ws, mark })
+  })
+  return stream
+}
+
+export async function getTouchSocket({ mark }) {
+  console.info('Got a client')
+  let device = (await listDevices(client))[0]
+  if (!device) {
+    console.info('no devices')
+    return
+  } else {
+    console.info('device got')
+  }
+  var { err, stream } = await client
+    .openLocal(device.id, 'localabstract:minitouch')
+    .timeout(10000)
+    .then(out => ({ stream: out }))
+    .catch(err => ({ err }))
+  if (err) {
+    console.info('miniTouch socket error, Retry within .2 second!!!')
+    await new Promise(resolve => setTimeout(resolve, 200))
+    // mark.touchSocket = 
+    return await getTouchSocket({ mark })
+  }
+  stream.on('error', function() {
+    console.error('Be sure to run `adb forward tcp:1313 localabstract:minicap`')
+    process.exit(1)
+  })
+
+  stream.on('readable', tryRead)
+  function tryRead() {
+    var chunk = stream.read()
+    console.info('[chunk]', chunk.toString())
+  }
+  stream.on('close', async () => {
+    console.info('socket Stream Closed ')
+    mark.touchSocket = null
+    mark.touchSocket = await getTouchSocket({ mark })
   })
   return stream
 }

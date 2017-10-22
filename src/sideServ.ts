@@ -2,6 +2,7 @@ import {
   getDevices,
   deploy,
   start,
+  startTouch,
   stop,
   checkRunning,
   forward,
@@ -23,8 +24,8 @@ export async function sideServ() {
     if (!chunk) return
     currentStatus.orientation = /\d+/.exec(chunk.toString())[0]
     console.info('[Orentation]', JSON.stringify(currentStatus))
-    await stop()
     await start(currentStatus)
+    await startTouch()
   })
   rotatorMonitorSocket.on('close', () => {
     setTimeout(sideServ, 3000)
