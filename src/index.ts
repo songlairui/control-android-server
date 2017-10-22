@@ -6,6 +6,7 @@ import * as net from 'net'
 
 import App from './App'
 import { liveStream, getTouchSocket } from './util/frameutil'
+import { sendKey } from './util/adbutil'
 import { sideServ } from './sideServ'
 
 debug('ts-express:server')
@@ -65,12 +66,25 @@ void (async function() {
 
 async function wssConnect(ws) {
   mark.stream = mark.stream || (await liveStream({ ws, mark }))
-  ws.on('message', data => {
-    console.info('Received:', { data })
-    console.info(JSON.stringify(data))
-    if (mark.touchSocket) {
-      mark.touchSocket.write(data)
+  ws.on('message', async data => {
+    try {
+      data = JSON.parse(data)
+      if (!data.type) throw new Error('no type')
+      switch (data.type) {
+        case 'touch':
+          if (mark.touchSocket) {
+            mark.touchSocket.write(data.data)
+          }
+          break
+        case 'key':
+          sendKey(data.data)
+          break
+      }
+    } catch (e) {
+      console.info(e)
     }
+    console.info('Received:')
+    console.info(JSON.stringify(data))
   })
   ws.on('close', function() {
     console.info('------ CLOSED ws  ----- :', ws === null, mark.stream === null)

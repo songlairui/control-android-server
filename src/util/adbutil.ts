@@ -10,6 +10,8 @@ import {
 import * as util from 'util'
 import * as path from 'path'
 import * as adb from 'adbkit'
+const KeyMap = require('./android_key.json')
+
 let client = adb.createClient()
 
 let tracedDevices = null
@@ -203,6 +205,24 @@ export async function getRotatorMonitor() {
   return client.shell(device.id, command)
 }
 
+export async function sendKey(keyname) {
+  let device = (tracedDevices || (await listDevices(client)))[0]
+
+  let keyCode = KeyMap[`KEYCODE_${keyname.toUpperCase()}`]
+  if (keyname === 'back') {
+    keyCode = 196
+    client.shell(
+      device.id,
+      `sendevent /dev/input/event4 1 ${keyCode} 1 && sendevent /dev/input/event4 0 0 0 && sendevent /dev/input/event4 1 ${keyCode} 0 && sendevent /dev/input/event4 0 0 0`
+    )
+  } else {
+    client.shell(device.id, `input keyevent ${keyCode}`)
+  }
+  // for (let i = 0; i <= 7; i++) {
+  //   console.info(' -------    send via event' + i)
+
+  // }
+}
 
 function treatOut(out) {
   // out.on('readable', () => {
