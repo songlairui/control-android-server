@@ -230,7 +230,7 @@ export async function getTouchSocket({ mark }) {
   stream.on('readable', tryRead)
   function tryRead() {
     var chunk = stream.read()
-    console.info('[chunk]', chunk.toString())
+    // console.info('[chunk]', chunk.toString())
   }
   stream.on('close', async () => {
     console.info('socket Stream Closed ')
