@@ -17,13 +17,23 @@ App.set('port', port)
 const server = http.createServer(App)
 var wss = new WebSocketServer({ server: server })
 
+let mark = {
+  lastTimeStamp: null,
+  stream: null,
+  touchSocket: null,
+  orientation: '0'
+}
+void (async function() {
+  mark.touchSocket = await getTouchSocket({ mark })
+})()
+
 wss.on('connection', wssConnect)
 
 server.listen(port)
 server.on('error', onError)
 server.on('listening', onListening)
 
-sideServ()
+sideServ(mark)
 
 function normalizePort(val: number | string): number | string | boolean {
   let port: number = +val
@@ -55,25 +65,56 @@ function onListening(): void {
   debug(`listening on ${bind}`)
 }
 
-let mark = {
-  lastTimeStamp: null,
-  stream: null,
-  touchSocket: null
-}
-void (async function() {
-  mark.touchSocket = await getTouchSocket({ mark })
-})()
-
 async function wssConnect(ws) {
   mark.stream = mark.stream || (await liveStream({ ws, mark }))
   ws.on('message', async data => {
+    // console.info('Received:')
+    // console.info(JSON.stringify(data))
     try {
       data = JSON.parse(data)
       if (!data.type) throw new Error('no type')
       switch (data.type) {
         case 'touch':
           if (mark.touchSocket) {
-            mark.touchSocket.write(data.data)
+            let { x, y } = data.data
+            switch (mark.orientation) {
+              case '270':
+                ;[x, y] = [y, 1920 - x]
+                break
+              case '90':
+                ;[x, y] = [1080 - y, x]
+                break
+              case '180':
+                ;[x, y] = [1080 - x, 1920 - y]
+                break
+            }
+            switch (data.data.act) {
+              case 'r':
+                mark.touchSocket.write(`r\n`)
+                console.info(' [minitouch socket write]  ', `r 0\n`)
+                break
+              case 'd':
+                mark.touchSocket.write(`d 0 ${x} ${y} 50\n`)
+                mark.touchSocket.write(`c\n`)
+                console.info(
+                  ' [minitouch socket write]  ',
+                  `d 0 ${x} ${y} 50\n`
+                )
+                break
+              case 'm':
+                mark.touchSocket.write(`m 0 ${x} ${y} 50\n`)
+                mark.touchSocket.write(`c\n`)
+                console.info(
+                  ' [minitouch socket write]  ',
+                  `m 0 ${x} ${y} 50\n`
+                )
+                break
+              case 'u':
+                mark.touchSocket.write(`u 0\n`)
+                mark.touchSocket.write(`c\n`)
+                console.info(' [minitouch socket write]  ', `u 0\n`)
+                break
+            }
           }
           break
         case 'key':
@@ -83,8 +124,6 @@ async function wssConnect(ws) {
     } catch (e) {
       console.info(e)
     }
-    console.info('Received:')
-    console.info(JSON.stringify(data))
   })
   ws.on('close', function() {
     console.info('------ CLOSED ws  ----- :', ws === null, mark.stream === null)
@@ -95,11 +134,3 @@ async function wssConnect(ws) {
     if (mark.stream) mark.stream.end()
   })
 }
-
-process.stdin.resume()
-process.stdin.on('data', data => {
-  console.info('[data input]', JSON.stringify(data.toString()))
-  if (mark.touchSocket) {
-    mark.touchSocket.write(data.toString())
-  }
-})

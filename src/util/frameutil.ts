@@ -121,6 +121,7 @@ export async function liveStream({ ws, mark }) {
 
           if (readBannerBytes === bannerLength) {
             console.log('[chunk 1]banner', banner)
+            mark.orientation = '' + banner.orientation
           }
         } else if (readFrameBytes < 4) {
           frameBodyLength += (chunk[cursor] << (readFrameBytes * 8)) >>> 0
@@ -171,7 +172,7 @@ export async function liveStream({ ws, mark }) {
                 stream.end()
               }
             } else {
-              console.info('skip a frame ------- ')
+              // console.info('skip a frame ------- ')
             }
             // } else {
             // }
@@ -219,7 +220,7 @@ export async function getTouchSocket({ mark }) {
   if (err) {
     console.info('miniTouch socket error, Retry within .2 second!!!')
     await new Promise(resolve => setTimeout(resolve, 200))
-    // mark.touchSocket = 
+    // mark.touchSocket =
     return await getTouchSocket({ mark })
   }
   stream.on('error', function() {

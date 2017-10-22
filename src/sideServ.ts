@@ -14,7 +14,7 @@ let currentStatus = {
   orientation: '0'
 }
 
-export async function sideServ() {
+export async function sideServ(status) {
   await start(currentStatus) // 启动Serv
   let rotatorMonitorSocket = await getRotatorMonitor()
   let executing = false
@@ -23,7 +23,9 @@ export async function sideServ() {
     let chunk = rotatorMonitorSocket.read()
     if (!chunk) return
     currentStatus.orientation = /\d+/.exec(chunk.toString())[0]
-    console.info('[Orentation]', JSON.stringify(currentStatus))
+    console.info('[  set status.orientation to ', currentStatus.orientation)
+    status.orientation = currentStatus.orientation
+    // console.info('[Orentation]', JSON.stringify(currentStatus))
     await start(currentStatus)
     await startTouch()
   })
